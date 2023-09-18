@@ -1,30 +1,61 @@
-
-// you can just start the application on different runtimes
-// net7 and net8 should crash on the InvalidOperationException below
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// our original application has a convention like this to handle SPA url
+builder.Services.AddAuthorization();
 builder.Services.AddRazorPages(o => o.Conventions.AddPageRoute("/index", "{*url}"));
 
 var app = builder.Build();
 
-app.UsePathBase("/dilbert"); // if we remove this, things work on net7 and net8
-app.Use((httpContext, next) =>
+if (app.Configuration.GetValue("UsePathBaseNet7Workaround", false))
 {
-    // this code runs way before UseRouting(), so I would not expect it to know endpoint information yet.
-    var ep = httpContext.GetEndpoint();
-    if (ep != null)
+    const string key = "__GlobalEndpointRouteBuilder";
+    var keyExisted = false;
+
+    if (app is IApplicationBuilder a)
     {
-        // this exception is not triggered on net6, but getst triggered on net7 and net8
-        throw new InvalidOperationException("Enpdoint should be null");
+        if (a.Properties.TryGetValue(key, out var routeBuilder))
+        {
+            a.Properties.Remove(key);
+            keyExisted = true;
+        }
+
+        app.UsePathBase("/dilbert");
+
+        // set it back to how it originally was
+        if (keyExisted)
+        {
+            a.Properties.Add(key, routeBuilder);
+        }
     }
-    return next();
-});
+}
+else
+{
+    // removing the UsePathBase() on net7 removes the error
+    app.UsePathBase("/dilbert");
+}
+
+//app.Use((httpContext, next) =>
+//{
+//    var ep = httpContext.GetEndpoint();
+//    if (ep != null)
+//    {
+//        // since this is running before UseRouting(), how does it know it's endpoint?
+//        throw new InvalidOperationException("Enpdoint should be null");
+//    }
+//    return next();
+//});
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(Path.Combine(AppContext.BaseDirectory, "Content"))
+});
 app.UseRouting();
 app.UseAuthorization();
 app.MapRazorPages();
 app.Run();
+
+public partial class Program
+{
+}
