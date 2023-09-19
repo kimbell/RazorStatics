@@ -7,34 +7,36 @@ builder.Services.AddRazorPages(o => o.Conventions.AddPageRoute("/index", "{*url}
 
 var app = builder.Build();
 
-if (app.Configuration.GetValue("UsePathBaseNet7Workaround", false))
+if (app.Configuration.GetValue("UsePathBase", false))
 {
-    const string key = "__GlobalEndpointRouteBuilder";
-    var keyExisted = false;
-
-    if (app is IApplicationBuilder a)
+    if (app.Configuration.GetValue("UsePathBaseNet7Workaround", false))
     {
-        if (a.Properties.TryGetValue(key, out var routeBuilder))
-        {
-            a.Properties.Remove(key);
-            keyExisted = true;
-        }
+        const string key = "__GlobalEndpointRouteBuilder";
+        var keyExisted = false;
 
-        app.UsePathBase("/dilbert");
-
-        // set it back to how it originally was
-        if (keyExisted)
+        if (app is IApplicationBuilder a)
         {
-            a.Properties.Add(key, routeBuilder);
+            if (a.Properties.TryGetValue(key, out var routeBuilder))
+            {
+                a.Properties.Remove(key);
+                keyExisted = true;
+            }
+
+            app.UsePathBase("/dilbert");
+
+            // set it back to how it originally was
+            if (keyExisted)
+            {
+                a.Properties.Add(key, routeBuilder);
+            }
         }
     }
+    else
+    {
+        // removing the UsePathBase() on net7 removes the error
+        app.UsePathBase("/dilbert");
+    }
 }
-else
-{
-    // removing the UsePathBase() on net7 removes the error
-    app.UsePathBase("/dilbert");
-}
-
 //app.Use((httpContext, next) =>
 //{
 //    var ep = httpContext.GetEndpoint();

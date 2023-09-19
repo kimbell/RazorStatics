@@ -13,6 +13,7 @@ namespace RazorStatics.Tests
         private readonly TestOutputLoggerProvider _logger;
 
         public bool UsePathBaseNet7Workaround { get; set; }
+        public bool UsePathBase { get; set; }
 
         public TestScope(ITestOutputHelper output)
         {
@@ -29,7 +30,8 @@ namespace RazorStatics.Tests
             });
             builder.ConfigureAppConfiguration(c => c.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                {"UsePathBaseNet7Workaround", UsePathBaseNet7Workaround.ToString() }
+                { nameof(UsePathBaseNet7Workaround), UsePathBaseNet7Workaround.ToString() },
+                { nameof(UsePathBase), UsePathBase.ToString() }
             }));
             //builder.UseWebRoot(Path.Combine(AppContext.BaseDirectory, "Content"));
         }

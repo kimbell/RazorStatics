@@ -17,7 +17,10 @@ namespace RazorStatics.Tests
         [InlineData("http://localhost/dilbert")] // path base
         public async Task RazorPage(string path)
         {
-            using var ts = new TestScope(_output);
+            using var ts = new TestScope(_output)
+            {
+                UsePathBase = true
+            };
             var httpClient = ts.CreateClient();
             var response = await httpClient.GetStringAsync(path);
 
@@ -29,7 +32,10 @@ namespace RazorStatics.Tests
         [InlineData("http://localhost/dilbert/bundles/bob.js")] // path base
         public async Task StaticFile(string path)
         {
-            using var ts = new TestScope(_output);
+            using var ts = new TestScope(_output)
+            {
+                UsePathBase = true
+            };
             var httpClient = ts.CreateClient();
             var response = await httpClient.GetStringAsync(path);
 
@@ -41,9 +47,25 @@ namespace RazorStatics.Tests
         [InlineData("http://localhost/dilbert/bundles/bob.js")] // path base
         public async Task StaticFile_UsePathBaseNet7Workaround(string path)
         {
-            using var ts = new TestScope(_output);
-            ts.UsePathBaseNet7Workaround = true;
+            using var ts = new TestScope(_output)
+            {
+                UsePathBase = true,
+                UsePathBaseNet7Workaround = true
+            }; 
 
+            var httpClient = ts.CreateClient();
+            var response = await httpClient.GetStringAsync(path);
+
+            Assert.Contains("// this is bob", response, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Theory]
+        [InlineData("http://localhost/bundles/bob.js")] // root
+        //[InlineData("http://localhost/dilbert/bundles/bob.js")] // path base
+        public async Task StaticFile_NoPathBase(string path)
+        {
+            using var ts = new TestScope(_output);
+            
             var httpClient = ts.CreateClient();
             var response = await httpClient.GetStringAsync(path);
 
